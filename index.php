@@ -37,7 +37,6 @@
           </ul>
           <form class="navbar-form navbar-right" action="." method="get">
             <input id="searchBox" type="text" class="form-control" placeholder="Search..." name="q" >
-
           </form>
         </div>
       </div>
@@ -89,7 +88,7 @@
 					echo "<li>";
 				}				
 			?>
-			<a href="?page=Edit">Edit Topics</a></li>
+			<a href="?page=Edit&id=1">Edit Topics</a></li>
             <?php
 				if($page=='Search'){
 					echo "<li class='active'>";
@@ -201,12 +200,29 @@
 				if (isset($_GET["id"]))
 				{
 					$TitleID=$_GET["id"];
+					if($TitleID<=0){
+						$TitleID=1;
+					}
+					else if($TitleID>=count($topics)){
+						$TitleID=count($topics)-1;
+					}	
 					FetchTitle($TitleID,$topics,$con);	
-					echo '<h2 class="sub-header">Edit Topic</h2><br>';
+					echo '<h2 class="sub-header"><a href="?page=Edit&id='.($TitleID-1).'"><button type="button" class="btn btn-default btn-lg"><span class="glyphicon glyphicon-backward"></span></button></a> ';
+					echo 'Editing Topic Number '.$TitleID.' ';
+					echo '<a href="?page=Edit&id='.($TitleID+1).'"><button type="button" class="btn btn-default btn-lg"><span class="glyphicon glyphicon-forward"></span></button></a></h2><br>';
+					echo '<form action="." method="get">';
 					echo '<h4 class="sub-header">Topic</h4>';
-					echo '<input type="text" class="form-control" value="'.$Title.'" required autofocus>';
+					echo '<input type="text" class="form-control" value="'.$Title.'" name="topic" required autofocus>';
 					echo '<h4 class="sub-header">Keys</h4>';
-					echo '<input type="text" class="form-control" value="'.$Title.'">';
+					$keyList=$keys[0];
+					for ($i = 1; $i < count($keys); $i++) {
+						$keyList=$keyList.", ".$keys[$i];
+					}					
+					echo '<input type="text" class="form-control" value="'.$keyList.'" name="keys" required>';					
+					echo '<br>';	
+					echo '<button type="submit" class="btn btn-success btn-lg"><span class="glyphicon glyphicon-ok-circle"></span> Update</button> ';
+					echo '</form>';
+					
 				}
 				else{					
 					ErrorMesage();
@@ -226,7 +242,7 @@
 				echo '<a href="?page=Edit&id='.$TitleID.'"><button type="button" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-pencil"></span></button></a></h2>';
 				print '<h4>Keys; </h4>';
 				for ($i = 0; $i < count($keys); $i++) {
-					echo '<a href="?page=Search&q='.$keys[$i].'"><button type="button" class="btn btn-lg btn-info">'.$keys[$i].'</button></a>';
+					echo '<a href="?page=Search&q='.$keys[$i].'"><button type="button" class="btn btn-sm btn-info">'.$keys[$i].'</button></a> ';
 				}
 			}
 			
