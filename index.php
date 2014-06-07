@@ -287,8 +287,23 @@
 						}
 					}
 					
+					//Now we need to clean up the orphaned keys
 					
+					//The following will return the indexes of the orphaned keys
+					$sql="SELECT Res.Index FROM (SELECT tt_title_to_key.Title,tt_key.Index,tt_key.Key FROM tt_title_to_key RIGHT OUTER JOIN tt_key ON tt_title_to_key.Key = tt_key.Index) AS Res WHERE Res.Title IS NULL;";
+					$result=mysqli_query($con,$sql);
+					if (!$result) {
+						die('Error: ' . mysqli_error($con));
+					}
 					
+					//Now delete the orphaned keys
+					while($row = mysqli_fetch_array($result)) {
+						$sql="DELETE FROM tt_key WHERE `Index` = '".$row['Index']."'";	
+						if (!mysqli_query($con,$sql)) {
+							die('Error: ' . mysqli_error($con));
+						}						
+					}
+										
 					echo $Title."<br>";
 					echo $keys[0];					
 				}
