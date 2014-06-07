@@ -134,13 +134,11 @@
 			if (mysqli_connect_errno()) {
 			  echo "Failed to connect to MySQL: " . mysqli_connect_error();
 			}
+			
 			$result = mysqli_query($con,"SELECT * FROM TT_Title");
 			
-			$topics =array($result->num_rows);
-			while($row = mysqli_fetch_array($result))
-			{
-				$topics[$row['Index']] = $row['Topic'];
-			}
+			$topics =array();
+			LoadAllTopics();
 			//echo $topics[2];
 			
 			$TitleID=0;
@@ -224,8 +222,10 @@
 				if ((isset($_GET["topic"]))&&(isset($_GET["keys"])))
 				{
 					ExtractDBwriterInput();
+					$isAdd=true;
 					
 					if(isset($_GET["id"])){ //ID is already set, i.e. This is an update
+						$isAdd=false;
 						$TitleID=$_GET["id"];
 						
 						//Checking and updating keys one by one is an unwanted overhead. So keys are dropped and reinserted.
@@ -240,6 +240,7 @@
 						if (!mysqli_query($con,$sql)) {
 							die('Error: ' . mysqli_error($con));
 						}
+						
 					}
 					else{  //There is no id i.e this is an add 
 					
@@ -303,9 +304,20 @@
 							die('Error: ' . mysqli_error($con));
 						}						
 					}
+					
+					//Refresh loaded topic details
+					LoadAllTopics();
+
+					if($isAdd){
+						//Re-fetch the Added Topic and show it
+						FetchTitle($TitleID,$topics,$con);						
+						ShowTitle();	
+					}
+					else{
+						//Do forwarding!!!!
+						echo 'Not done yet!';
+					}
 										
-					echo $Title."<br>";
-					echo $keys[0];					
 				}
 				else{
 					ErrorMesage();
@@ -341,6 +353,20 @@
 				}
 				echo '</button> </form>';
 			}
+			
+			
+			function LoadAllTopics(){
+				global $topics,$con;
+				
+				$result = mysqli_query($con,"SELECT * FROM TT_Title");
+				
+				$topics =array($result->num_rows);
+				while($row = mysqli_fetch_array($result))
+				{
+					$topics[$row['Index']] = $row['Topic'];
+				}			
+			}
+			
 			
 			
 			function ExtractDBwriterInput(){
