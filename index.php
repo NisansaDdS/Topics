@@ -196,7 +196,7 @@
 				echo '</div>';
 				echo '</div>';
 			}
-			else if($page=='Edit'){
+			else if($page=='Edit'){ //Ui for Edit
 				if (isset($_GET["id"]))
 				{
 					$TitleID=$_GET["id"];
@@ -210,25 +210,139 @@
 					echo '<h2 class="sub-header"><a href="?page=Edit&id='.($TitleID-1).'"><button type="button" class="btn btn-default btn-lg"><span class="glyphicon glyphicon-backward"></span></button></a> ';
 					echo 'Editing Topic Number '.$TitleID.' ';
 					echo '<a href="?page=Edit&id='.($TitleID+1).'"><button type="button" class="btn btn-default btn-lg"><span class="glyphicon glyphicon-forward"></span></button></a></h2><br>';
-					echo '<form action="." method="get">';
-					echo '<h4 class="sub-header">Topic</h4>';
-					echo '<input type="text" class="form-control" value="'.$Title.'" name="topic" required autofocus>';
-					echo '<h4 class="sub-header">Keys</h4>';
-					$keyList=$keys[0];
-					for ($i = 1; $i < count($keys); $i++) {
-						$keyList=$keyList.", ".$keys[$i];
-					}					
-					echo '<input type="text" class="form-control" value="'.$keyList.'" name="keys" required>';					
-					echo '<br>';	
-					echo '<button type="submit" class="btn btn-success btn-lg"><span class="glyphicon glyphicon-ok-circle"></span> Update</button> ';
-					echo '</form>';
-					
+					ShowInputForm();					
 				}
 				else{					
 					ErrorMesage();
 				}
 			}
+			else if($page=='Add'){ //Ui for Add
+				echo '<h2 class="sub-header">Adding New Topic</h2><br>';
+				ShowInputForm();
+			}
+			else if($page=='Update'){  //Handles the DB operation of both Edit and Add requests
+				if ((isset($_GET["topic"]))&&(isset($_GET["keys"])))
+				{
+					ExtractDBwriterInput();
+					
+					if(isset($_GET["id"])){ //ID is already set, i.e. This is an update
+						$TitleID=$_GET["id"];
+						
+						//Checking and updating keys one by one is an unwanted overhead. So keys are dropped and reinserted.
+						//This is not a problem because duplicates are not inserted. First, the Topic to Key mappings are dropped.
+						$sql="DELETE FROM tt_title_to_key WHERE `Title` = '".$TitleID."'";	
+						if (!mysqli_query($con,$sql)) {
+							die('Error: ' . mysqli_error($con));
+						}
+						
+						//Now update the Topic
+						$sql="UPDATE tt_title SET `Topic`='".$Title."' WHERE `Index`='".$TitleID."'";
+						if (!mysqli_query($con,$sql)) {
+							die('Error: ' . mysqli_error($con));
+						}
+					}
+					else{  //There is no id i.e this is an add 
+					
+						//Add the topic
+						$sql="INSERT INTO tt_title (`Topic`) VALUES ('".$Title."')";
+						if (!mysqli_query($con,$sql)) {
+							die('Error: ' . mysqli_error($con));
+						}
+						$TitleID=mysqli_insert_id($con);
+					}
+					
+					
+					//Now insert Keys and Topic to key mappings
+					for ($j = 0; $j < count($keys); $j++) {  
+						if (preg_match("/^.(?=.*[a-z])|(?=.*[A-Z]).*$/", $keys[$j])){ //Take only valid strings
+							//See if the key already exists
+							$sql="SELECT * FROM tt_key WHERE `Key` = '".$keys[$j]."'";
+							$result =mysqli_query($con,$sql);
+							if (!$result) {
+								die('Error: ' . mysqli_error($con));
+							}
+							else{
+							   if($result->num_rows>0){ //Already exists
+									while($row = mysqli_fetch_array($result)) {
+										$keyID=$row['Index'];
+									}
+							   }
+							   else{
+								   //Add the key
+								   $sql="INSERT INTO tt_key (`Key`) VALUES ('".$keys[$j]."');";	
+									if (!mysqli_query($con,$sql)) {
+										die('Error: ' . mysqli_error($con));
+									}
+									$keyID=mysqli_insert_id($con);
+							   }
+							}
+							
+							//Add title to key mapping
+							$sql="INSERT INTO `tt_title_to_key` (`Title`,`Key`) VALUES ('".$TitleID."','".$keyID."');";	
+							if (!mysqli_query($con,$sql)) {
+								die('Error: ' . mysqli_error($con));
+							}
+							$keyID=mysqli_insert_id($con);	
+						
+						}
+					}
+					
+					
+					
+					echo $Title."<br>";
+					echo $keys[0];					
+				}
+				else{
+					ErrorMesage();
+				}
+			}
 			
+			function ShowInputForm(){
+				global $Title,$keys,$TitleID; //Refer to the global variables
+			
+				echo '<form action="." method="get">';
+				echo '<h4 class="sub-header">Topic</h4>';
+				echo '<input type="hidden" class="form-control" value="Update" name="page">';
+				if($TitleID>0){
+					echo '<input type="hidden" class="form-control" value="'.$TitleID.'" name="id">';
+				}
+				echo '<input type="text" class="form-control" value="'.$Title.'" name="topic" required autofocus>';
+				echo '<h4 class="sub-header">Keys</h4>';
+				$keyList="";
+				if($TitleID>0){
+					$keyList=$keys[0];
+					for ($i = 1; $i < count($keys); $i++) {
+						$keyList=$keyList.", ".$keys[$i];
+					}	
+				}				
+				echo '<input type="text" class="form-control" value="'.$keyList.'" name="keys" required>';					
+				echo '<br>';	
+				echo '<button type="submit" class="btn btn-success btn-lg"><span class="glyphicon glyphicon-ok-circle"></span> ';
+				if($TitleID>0){
+					echo 'Update';
+				}
+				else{
+					echo 'Add';
+				}
+				echo '</button> </form>';
+			}
+			
+			
+			function ExtractDBwriterInput(){
+			     global $Title,$keys,$TitleID; //Refer to the global variables
+				
+				$Title=$_GET["topic"];
+				$keysString=$_GET["keys"];
+				
+					
+				//KeyString cleaning
+				$keysString=str_replace(array("(",")"," ","? "), "", $keysString);					
+				$keysString=str_replace(array("?", ".", "'",",,"), "", $keysString);
+				$keysString=str_replace("\n", "", $keysString);
+					
+				//Extract keys
+				$keys = explode(",",(string)$keysString);
+			}
 			
 			function ErrorMesage(){
 				echo '<h2 class="sub-header">Invalid!</h2>';
@@ -265,6 +379,9 @@
 			}
 			
 			
+			
+			
+			mysqli_close($con); //Close the MYSQL connector
 		  ?>
 
          
