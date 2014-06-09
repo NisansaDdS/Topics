@@ -1,3 +1,4 @@
+<?php session_start(); ?>
 <head>
 
 <!-- Bootstrap core CSS -->
@@ -8,10 +9,14 @@
 	
 <!-- Bootstrap theme -->
     <link href="./bootstrap-3.1.1-dist/css/bootstrap-theme.css" rel="stylesheet">
-	
+ <!--   <link href="./bootstrap-3.1.1-dist/css/signin.css" rel="stylesheet">  -->	
 	
 	<style type="text/css">
 		.title-container { padding:50px 0px; }
+		
+		.form-signin {
+		  max-width: 400px;		 
+		}
 	</style>
 	
 	
@@ -33,7 +38,16 @@
         <div class="navbar-collapse collapse">
           <ul class="nav navbar-nav navbar-right">
             <li><a href="#">University of Moratuwa Toastmasters Club</a></li>            
-            <li><a href="#">Nisansa de Silva</a></li>
+            <li>
+			<?php 				
+				if(isset($_SESSION['Name'])){
+					echo '<a href=".?page=LogOut">'.$_SESSION['Name'].' (Log out)</a>';
+				}
+				else{
+					echo '<a href=".?page=Login&Next=Random">Log in</a>';					
+				}
+			?>			
+			</li>
           </ul>
           <form class="navbar-form navbar-right" action="." method="get">
             <input id="searchBox" type="text" class="form-control" placeholder="Search..." name="q" >
@@ -46,13 +60,17 @@
 		  
 			if (isset($_GET["page"]))
 			{
-				$page=$_GET["page"];
+				$page=$_GET["page"];								
 			}
 			else if(isset($_GET["q"]))
 			{
 				$page='Search';
 			}
-			else{
+			else if (isset($_POST["page"]))
+			{
+				$page=$_POST["page"];								
+			}	
+			else{				
 				$page='Random';
 			}
 			
@@ -71,25 +89,7 @@
 				}				
 			?>
             <a href="?page=Random">Random Topic!</a></li>
-            <?php
-				if($page=='Add'){
-					echo "<li class='active'>";
-				}
-				else{
-					echo "<li>";
-				}				
-			?>
-			<a href="?page=Add">Add Topic</a></li>
-            <?php
-				if($page=='Edit'){
-					echo "<li class='active'>";
-				}
-				else{
-					echo "<li>";
-				}				
-			?>
-			<a href="?page=Edit&id=1">Edit Topics</a></li>
-            <?php
+			<?php
 				if($page=='Search'){
 					echo "<li class='active'>";
 				}
@@ -98,45 +98,74 @@
 				}				
 			?>
 			<a href="?page=Search">Search</a></li>
+            <?php
+				if($page=='Add'){
+					echo "<li class='active'>";
+				}
+				else{
+					echo "<li>";
+				}				
+			?>
+			<a href="?page=Add">Add Topic
+			<?php
+				if(!isset($_SESSION['Name'])){
+					echo '<span class="glyphicon glyphicon-lock"></span>';
+				}
+			?>
+			</a></li>
+            <?php
+				if($page=='Edit'){
+					echo "<li class='active'>";
+				}
+				else{
+					echo "<li>";
+				}				
+			?>
+			<a href="?page=Edit&id=1">Edit Topics
+			<?php
+				if(!isset($_SESSION['Name'])){
+					echo '<span class="glyphicon glyphicon-lock"></span>';
+				}
+			?>
+			</a></li>            
+			<?php
+				if($page=='AddUser'){
+					echo "<li class='active'>";
+				}
+				else{
+					echo "<li>";
+				}				
+			?>
+			<a href="?page=AddUser">Add User
+			<?php
+				if(!isset($_SESSION['Name'])){
+					echo '<span class="glyphicon glyphicon-lock"></span>';
+				}
+				else if(isset($_SESSION['Level'])){
+					if($_SESSION['Level']<1){
+						echo '<span class="glyphicon glyphicon-lock"></span>';
+					}
+				}
+			?>
+			</a></li>
           </ul>          
         </div>
         <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-       <!--    <h1 class="page-header">Dashboard</h1>	 -->	  
-      <!--    <div class="row placeholders">
-            <div class="col-xs-6 col-sm-3 placeholder">
-              <img data-src="holder.js/200x200/auto/sky" class="img-responsive" alt="Generic placeholder thumbnail">
-              <h4>Label</h4>
-              <span class="text-muted">Something else</span>
-            </div>
-            <div class="col-xs-6 col-sm-3 placeholder">
-              <img data-src="holder.js/200x200/auto/vine" class="img-responsive" alt="Generic placeholder thumbnail">
-              <h4>Label</h4>
-              <span class="text-muted">Something else</span>
-            </div>
-            <div class="col-xs-6 col-sm-3 placeholder">
-              <img data-src="holder.js/200x200/auto/sky" class="img-responsive" alt="Generic placeholder thumbnail">
-              <h4>Label</h4>
-              <span class="text-muted">Something else</span>
-            </div>
-            <div class="col-xs-6 col-sm-3 placeholder">
-              <img data-src="holder.js/200x200/auto/vine" class="img-responsive" alt="Generic placeholder thumbnail">
-              <h4>Label</h4>
-              <span class="text-muted">Something else</span>
-            </div>
-          </div>  -->
-		  <?php
-		  
+        <?php
+		
+			$key1='MA';
+			$key2='1988';
+			$un="toastadmin";
+			$dbPass="T$$$$$$U0M"
+		
+		
 			
-
-			
-			$con=mysqli_connect("127.0.0.1","toastadmin","T0aST$#U0M","toastmastersdb");
+			$con=mysqli_connect("localhost",$un,$dbPass,"toastmastersdb");
 
 			if (mysqli_connect_errno()) {
 			  echo "Failed to connect to MySQL: " . mysqli_connect_error();
 			}
-			
-			$result = mysqli_query($con,"SELECT * FROM TT_Title");
-			
+									
 			$topics =array();
 			LoadAllTopics();
 			//echo $topics[2];
@@ -145,7 +174,71 @@
 			$Title="";
 			$keys=array();
 			
-			if($page=='Show'){
+			
+			if($page=='Login'){	//User interface for logging in	
+				if(isset($_GET["Wrong"])){
+					echo '<div class="alert alert-danger alert-dismissable">';
+					echo '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>';
+					echo '<strong>Warning!</strong> Wrong email address or password!';
+					echo '</div>';
+				}
+				echo '<div class="container"><form class="form-signin" role="form" action="." method="post">';
+				echo '<h2 class="form-signin-heading">Please sign in</h2>';
+				echo '<input type="hidden" class="form-control" value="CheckLogin" name="page">';
+				if(!isset($_GET["Wrong"])){
+					echo '<input type="hidden" class="form-control" value="'.$_SERVER['QUERY_STRING'].'" name="Redirect">';
+				}
+				echo '<input type="email" class="form-control" placeholder="Email address" name="email" ';
+				if(isset($_GET["Wrong"])){
+					echo 'value='.$_GET["email"];
+				}
+				echo 'required autofocus>';
+				echo '<input type="password" class="form-control" placeholder="Password" name="password" required>';
+				echo '<label class="checkbox">';
+				echo '<input type="checkbox" value="remember-me"> Remember me';
+				echo '</label>';
+				echo '<button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>';
+				echo '</form></div>';
+			}
+			else if($page=='CheckLogin') //Business logic to check login details
+			{				
+				if(isset($_POST["email"]) && isset($_POST["password"])){
+					$pass=CryptPass($_POST["password"]);
+					$email=$_POST["email"];					
+					$sql="SELECT * FROM `tt_members` WHERE`Email` = '".$email."'";
+					$result =mysqli_query($con,$sql);
+					if (!$result){
+						die('Error: ' . mysqli_error($con));
+					}
+					else{							   
+						while($row = mysqli_fetch_array($result)) {
+							if($pass==$row['Password']){
+								$_SESSION['Name']=$row['Name'];
+								$_SESSION['Level']=$row['Level'];
+								if($_POST["Redirect"]!=""){
+									$params = explode("page=Login&Next=",(string)$_POST["Redirect"]);
+									header( "Location: ./?page=".$params[1]);
+								}
+								else{
+									header( "Location: ./?page=Random"); //Does not work/////////////////////////////////////////////////////////////////
+								}								
+							}
+							else{
+								header( "Location: ./?page=Login&Wrong&email=".$_POST["email"]);
+							}
+						}						   
+					}
+				}
+			}
+			else if($page=='LogOut') //Business logic LogOut
+			{
+				if(isset($_SESSION['Name'])){
+						unset($_SESSION['Name']);
+						unset($_SESSION['Level']);
+				}
+				header( "Location: ./?page=Random");
+			}
+			else if($page=='Show'){
 				if (isset($_GET["id"]))
 				{
 					$TitleID=$_GET["id"];
@@ -195,133 +288,258 @@
 				echo '</div>';
 			}
 			else if($page=='Edit'){ //Ui for Edit
-				if (isset($_GET["id"]))
-				{
-					$TitleID=$_GET["id"];
-					if($TitleID<=0){
-						$TitleID=1;
-					}
-					else if($TitleID>=count($topics)){
-						$TitleID=count($topics)-1;
-					}	
-					FetchTitle($TitleID,$topics,$con);	
-					echo '<h2 class="sub-header"><a href="?page=Edit&id='.($TitleID-1).'"><button type="button" class="btn btn-default btn-lg"><span class="glyphicon glyphicon-backward"></span></button></a> ';
-					echo 'Editing Topic Number '.$TitleID.' ';
-					echo '<a href="?page=Edit&id='.($TitleID+1).'"><button type="button" class="btn btn-default btn-lg"><span class="glyphicon glyphicon-forward"></span></button></a></h2><br>';
-					ShowInputForm();					
+				if(isset($_SESSION['Level'])){					
+						if (isset($_GET["id"]))
+						{
+							$TitleID=$_GET["id"];
+							if($TitleID<=0){
+								$TitleID=1;
+							}
+							else if($TitleID>=count($topics)){
+								$TitleID=count($topics)-1;
+							}	
+							FetchTitle($TitleID,$topics,$con);	
+							echo '<h2 class="sub-header"><a href="?page=Edit&id='.($TitleID-1).'"><button type="button" class="btn btn-default btn-lg"><span class="glyphicon glyphicon-backward"></span></button></a> ';
+							echo 'Editing Topic Number '.$TitleID.' ';
+							echo '<a href="?page=Edit&id='.($TitleID+1).'"><button type="button" class="btn btn-default btn-lg"><span class="glyphicon glyphicon-forward"></span></button></a></h2><br>';
+							ShowInputForm();
+							if (isset($_GET["Updated"]))
+							{
+								echo '<div class="alert alert-success alert-dismissable">';
+								echo '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>';
+								echo 'Topic Updated!';
+								echo '</div>';
+							}
+
+						}
+						else{					
+							ErrorMesage();
+						}					
 				}
-				else{					
-					ErrorMesage();
+				else{
+					$params = explode("page=",(string)$_SERVER['QUERY_STRING']);
+					header( "Location: ./?page=Login&Next=".$params[1]);
 				}
 			}
 			else if($page=='Add'){ //Ui for Add
-				echo '<h2 class="sub-header">Adding New Topic</h2><br>';
-				ShowInputForm();
+				if(isset($_SESSION['Level'])){
+					echo '<h2 class="sub-header">Adding New Topic</h2><br>';
+					ShowInputForm();
+				}
+				else{
+					$params = explode("page=",(string)$_SERVER['QUERY_STRING']);
+					header( "Location: ./?page=Login&Next=".$params[1]);
+				}
 			}
 			else if($page=='Update'){  //Handles the DB operation of both Edit and Add requests
-				if ((isset($_GET["topic"]))&&(isset($_GET["keys"])))
-				{
-					ExtractDBwriterInput();
-					$isAdd=true;
-					
-					if(isset($_GET["id"])){ //ID is already set, i.e. This is an update
-						$isAdd=false;
-						$TitleID=$_GET["id"];
+				if(isset($_SESSION['Level'])){ 
+					if ((isset($_GET["topic"]))&&(isset($_GET["keys"])))
+					{
+						ExtractDBwriterInput();
+						$isAdd=true;
 						
-						//Checking and updating keys one by one is an unwanted overhead. So keys are dropped and reinserted.
-						//This is not a problem because duplicates are not inserted. First, the Topic to Key mappings are dropped.
-						$sql="DELETE FROM tt_title_to_key WHERE `Title` = '".$TitleID."'";	
-						if (!mysqli_query($con,$sql)) {
-							die('Error: ' . mysqli_error($con));
-						}
-						
-						//Now update the Topic
-						$sql="UPDATE tt_title SET `Topic`='".$Title."' WHERE `Index`='".$TitleID."'";
-						if (!mysqli_query($con,$sql)) {
-							die('Error: ' . mysqli_error($con));
-						}
-						
-					}
-					else{  //There is no id i.e this is an add 
-					
-						//Add the topic
-						$sql="INSERT INTO tt_title (`Topic`) VALUES ('".$Title."')";
-						if (!mysqli_query($con,$sql)) {
-							die('Error: ' . mysqli_error($con));
-						}
-						$TitleID=mysqli_insert_id($con);
-					}
-					
-					
-					//Now insert Keys and Topic to key mappings
-					for ($j = 0; $j < count($keys); $j++) {  
-						if (preg_match("/^.(?=.*[a-z])|(?=.*[A-Z]).*$/", $keys[$j])){ //Take only valid strings
-							//See if the key already exists
-							$sql="SELECT * FROM tt_key WHERE `Key` = '".$keys[$j]."'";
-							$result =mysqli_query($con,$sql);
-							if (!$result) {
-								die('Error: ' . mysqli_error($con));
-							}
-							else{
-							   if($result->num_rows>0){ //Already exists
-									while($row = mysqli_fetch_array($result)) {
-										$keyID=$row['Index'];
-									}
-							   }
-							   else{
-								   //Add the key
-								   $sql="INSERT INTO tt_key (`Key`) VALUES ('".$keys[$j]."');";	
-									if (!mysqli_query($con,$sql)) {
-										die('Error: ' . mysqli_error($con));
-									}
-									$keyID=mysqli_insert_id($con);
-							   }
-							}
+						if(isset($_GET["id"])){ //ID is already set, i.e. This is an update
+							$isAdd=false;
+							$TitleID=$_GET["id"];
 							
-							//Add title to key mapping
-							$sql="INSERT INTO `tt_title_to_key` (`Title`,`Key`) VALUES ('".$TitleID."','".$keyID."');";	
+							//Checking and updating keys one by one is an unwanted overhead. So keys are dropped and reinserted.
+							//This is not a problem because duplicates are not inserted. First, the Topic to Key mappings are dropped.
+							$sql="DELETE FROM tt_title_to_key WHERE `Title` = '".$TitleID."'";	
 							if (!mysqli_query($con,$sql)) {
 								die('Error: ' . mysqli_error($con));
 							}
-							$keyID=mysqli_insert_id($con);	
-						
+							
+							//Now update the Topic
+							$sql="UPDATE tt_title SET `Topic`='".$Title."' WHERE `Index`='".$TitleID."'";
+							if (!mysqli_query($con,$sql)) {
+								die('Error: ' . mysqli_error($con));
+							}
+							
 						}
-					}
-					
-					//Now we need to clean up the orphaned keys
-					
-					//The following will return the indexes of the orphaned keys
-					$sql="SELECT Res.Index FROM (SELECT tt_title_to_key.Title,tt_key.Index,tt_key.Key FROM tt_title_to_key RIGHT OUTER JOIN tt_key ON tt_title_to_key.Key = tt_key.Index) AS Res WHERE Res.Title IS NULL;";
-					$result=mysqli_query($con,$sql);
-					if (!$result) {
-						die('Error: ' . mysqli_error($con));
-					}
-					
-					//Now delete the orphaned keys
-					while($row = mysqli_fetch_array($result)) {
-						$sql="DELETE FROM tt_key WHERE `Index` = '".$row['Index']."'";	
-						if (!mysqli_query($con,$sql)) {
+						else{  //There is no id i.e this is an add 
+						
+							//Add the topic
+							$sql="INSERT INTO tt_title (`Topic`) VALUES ('".$Title."')";
+							if (!mysqli_query($con,$sql)) {
+								die('Error: ' . mysqli_error($con));
+							}
+							$TitleID=mysqli_insert_id($con);
+						}
+						
+						
+						//Now insert Keys and Topic to key mappings
+						for ($j = 0; $j < count($keys); $j++) {  
+							if (preg_match("/^.(?=.*[a-z])|(?=.*[A-Z]).*$/", $keys[$j])){ //Take only valid strings
+								//See if the key already exists
+								$sql="SELECT * FROM tt_key WHERE `Key` = '".$keys[$j]."'";
+								$result =mysqli_query($con,$sql);
+								if (!$result) {
+									die('Error: ' . mysqli_error($con));
+								}
+								else{
+								   if($result->num_rows>0){ //Already exists
+										while($row = mysqli_fetch_array($result)) {
+											$keyID=$row['Index'];
+										}
+								   }
+								   else{
+									   //Add the key
+									   $sql="INSERT INTO tt_key (`Key`) VALUES ('".$keys[$j]."');";	
+										if (!mysqli_query($con,$sql)) {
+											die('Error: ' . mysqli_error($con));
+										}
+										$keyID=mysqli_insert_id($con);
+								   }
+								}
+								
+								//Add title to key mapping
+								$sql="INSERT INTO `tt_title_to_key` (`Title`,`Key`) VALUES ('".$TitleID."','".$keyID."');";	
+								if (!mysqli_query($con,$sql)) {
+									die('Error: ' . mysqli_error($con));
+								}
+								$keyID=mysqli_insert_id($con);	
+							
+							}
+						}
+						
+						//Now we need to clean up the orphaned keys
+						
+						//The following will return the indexes of the orphaned keys
+						$sql="SELECT Res.Index FROM (SELECT tt_title_to_key.Title,tt_key.Index,tt_key.Key FROM tt_title_to_key RIGHT OUTER JOIN tt_key ON tt_title_to_key.Key = tt_key.Index) AS Res WHERE Res.Title IS NULL;";
+						$result=mysqli_query($con,$sql);
+						if (!$result) {
 							die('Error: ' . mysqli_error($con));
-						}						
-					}
-					
-					//Refresh loaded topic details
-					LoadAllTopics();
+						}
+						
+						//Now delete the orphaned keys
+						while($row = mysqli_fetch_array($result)) {
+							$sql="DELETE FROM tt_key WHERE `Index` = '".$row['Index']."'";	
+							if (!mysqli_query($con,$sql)) {
+								die('Error: ' . mysqli_error($con));
+							}						
+						}
+						
+						//Refresh loaded topic details
+						LoadAllTopics();
 
-					if($isAdd){
-						//Re-fetch the Added Topic and show it
-						FetchTitle($TitleID,$topics,$con);						
-						ShowTitle();	
+						if($isAdd){
+							//Re-fetch the Added Topic and show it
+							FetchTitle($TitleID,$topics,$con);						
+							ShowTitle();	
+						}
+						else{
+							//Do forwarding!!!!
+							header( "Location: ./?page=Edit&id=".$TitleID."&Updated") ;				
+						}										
 					}
 					else{
-						//Do forwarding!!!!
-						echo 'Not done yet!';
+						ErrorMesage();
 					}
-										
+				}
+				else{ //This should never happen due to this being an internal function. But I put the check to prevent hacking
+					$params = explode("page=",(string)$_SERVER['QUERY_STRING']);
+					header( "Location: ./?page=Login&Next=".$params[1]);
+				}
+			}			
+			else if($page=='AddUser') //User interface for adding users
+			{
+				if(isset($_SESSION['Level'])){
+					if($_SESSION['Level']==1){
+						if(isset($_GET["PWMM"])){
+							echo '<div class="alert alert-danger alert-dismissable">';
+							echo '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>';
+							echo '<strong>Warning!</strong> Passwords do not match!';
+							echo '</div>';
+						}
+						echo '<form action="." class="form-signin" role="form" method="post">';
+						echo '<input type="hidden" class="form-control" value="AddUserDB" name="page">';
+						echo '<h4>Name</h4>';
+						echo '<input type="text" class="form-control" placeholder="Full Name" name="Name" ';
+						if(isset($_GET["Name"])){
+							echo 'value ="'.$_GET["Name"].'"';
+						}
+						echo 'required autofocus>';
+						echo '<h4>Email address (Used to login)</h4>';
+						echo '<input type="text" class="form-control" placeholder="Email address" name="Email" ';
+						if(isset($_GET["Email"])){
+							echo 'value ="'.$_GET["Email"].'"';
+						}
+						echo 'required>';
+						echo '<h4>Password</h4>';
+						echo '<input type="password" class="form-control" placeholder="Password" name="Password" required>';
+						echo '<h4>Confirm Password</h4>';
+						echo '<input type="password" class="form-control" placeholder="Confirm Password" name="CPassword" required>';
+						echo '<label class="checkbox">';
+						echo '<input type="checkbox" name="admin"> Is administrator';
+						echo '</label>';
+						echo '<br><button type="submit" class="btn btn-success btn-lg"><span class="glyphicon glyphicon-ok-circle"></span> Add User</button></form>';
+					}
+					else{
+						echo '<div class="alert alert-warning alert-dismissable">';
+						echo '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>';
+						echo 'You do not have admin powers!';
+						echo '</div>';
+					}
 				}
 				else{
-					ErrorMesage();
+					$params = explode("page=",(string)$_SERVER['QUERY_STRING']);
+					header( "Location: ./?page=Login&Next=".$params[1]);
 				}
+			}
+			else if($page=='AddUserDB') //Business logic to add user
+			{
+				if(isset($_SESSION['Level'])){
+					if($_SESSION['Level']==1){
+						if(isset($_POST["Name"]) && isset($_POST["Email"]) && isset($_POST["Password"])&& isset($_POST["CPassword"])){
+							//Check if passwords match if not error
+							if($_POST["Password"]==$_POST["CPassword"]){						
+								$pass=CryptPass($_POST["Password"]);
+								if(isset($_POST["admin"])){
+									if($_POST["admin"]=='on'){
+										$status=1;
+									}
+									else{
+										$status=0;
+									}
+								}
+								else{
+										$status=0;
+								}
+								$sql="INSERT INTO `tt_members` (`Name`,`Email`,`Password`,`Level`) VALUES ('".$_POST["Name"]."','".$_POST["Email"]."','".$pass."','".$status."');";
+								if (!mysqli_query($con,$sql)) {
+									die('Error: ' . mysqli_error($con));
+								}
+								else{
+									echo '<div class="alert alert-success alert-dismissable">';
+									echo '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>';
+									echo 'User '.$_POST["Name"].' added!';
+									echo '</div>';
+									RandomButton();
+								}
+							}
+							else{
+								header( "Location: ./?page=AddUser&Name=".$_POST["Name"]."&Email=".$_POST["Email"]."&PWMM") ;
+							}
+						}
+					}
+					else{
+						echo '<div class="alert alert-warning alert-dismissable">';
+						echo '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>';
+						echo 'You do not have admin powers!';
+						echo '</div>';
+					}
+				}
+				else{
+					$params = explode("page=",(string)$_SERVER['QUERY_STRING']);
+					header( "Location: ./?page=Login&Next=".$params[1]);
+				}				
+			}
+			
+			function CryptPass($passW){
+				global $key1,$key2;
+				$hashed_password = crypt($key1,$key2);
+				$pass=crypt($passW, $hashed_password);
+				return $pass;
 			}
 			
 			function ShowInputForm(){
@@ -358,7 +576,7 @@
 			function LoadAllTopics(){
 				global $topics,$con;
 				
-				$result = mysqli_query($con,"SELECT * FROM TT_Title");
+				$result = mysqli_query($con,"SELECT * FROM tt_title");
 				
 				$topics =array($result->num_rows);
 				while($row = mysqli_fetch_array($result))
@@ -387,6 +605,10 @@
 			
 			function ErrorMesage(){
 				echo '<h2 class="sub-header">Invalid!</h2>';
+				RandomButton();
+			}
+			
+			function RandomButton(){
 				echo '<a href="?page=Random"><button type="button" class="btn btn-lg btn-success">View a random topic!</button></a>';
 			}
 			
@@ -417,155 +639,15 @@
 				{
 					$keys[] = $row['Key'];
 				}
-			}
-			
-			
-			
+			}		
 			
 			mysqli_close($con); //Close the MYSQL connector
 		  ?>
 
-         
-		  
-		  <!--
-          <div class="table-responsive">
-            <table class="table table-striped">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Header</th>
-                  <th>Header</th>
-                  <th>Header</th>
-                  <th>Header</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>1,001</td>
-                  <td>Lorem</td>
-                  <td>ipsum</td>
-                  <td>dolor</td>
-                  <td>sit</td>
-                </tr>
-                <tr>
-                  <td>1,002</td>
-                  <td>amet</td>
-                  <td>consectetur</td>
-                  <td>adipiscing</td>
-                  <td>elit</td>
-                </tr>
-                <tr>
-                  <td>1,003</td>
-                  <td>Integer</td>
-                  <td>nec</td>
-                  <td>odio</td>
-                  <td>Praesent</td>
-                </tr>
-                <tr>
-                  <td>1,003</td>
-                  <td>libero</td>
-                  <td>Sed</td>
-                  <td>cursus</td>
-                  <td>ante</td>
-                </tr>
-                <tr>
-                  <td>1,004</td>
-                  <td>dapibus</td>
-                  <td>diam</td>
-                  <td>Sed</td>
-                  <td>nisi</td>
-                </tr>
-                <tr>
-                  <td>1,005</td>
-                  <td>Nulla</td>
-                  <td>quis</td>
-                  <td>sem</td>
-                  <td>at</td>
-                </tr>
-                <tr>
-                  <td>1,006</td>
-                  <td>nibh</td>
-                  <td>elementum</td>
-                  <td>imperdiet</td>
-                  <td>Duis</td>
-                </tr>
-                <tr>
-                  <td>1,007</td>
-                  <td>sagittis</td>
-                  <td>ipsum</td>
-                  <td>Praesent</td>
-                  <td>mauris</td>
-                </tr>
-                <tr>
-                  <td>1,008</td>
-                  <td>Fusce</td>
-                  <td>nec</td>
-                  <td>tellus</td>
-                  <td>sed</td>
-                </tr>
-                <tr>
-                  <td>1,009</td>
-                  <td>augue</td>
-                  <td>semper</td>
-                  <td>porta</td>
-                  <td>Mauris</td>
-                </tr>
-                <tr>
-                  <td>1,010</td>
-                  <td>massa</td>
-                  <td>Vestibulum</td>
-                  <td>lacinia</td>
-                  <td>arcu</td>
-                </tr>
-                <tr>
-                  <td>1,011</td>
-                  <td>eget</td>
-                  <td>nulla</td>
-                  <td>Class</td>
-                  <td>aptent</td>
-                </tr>
-                <tr>
-                  <td>1,012</td>
-                  <td>taciti</td>
-                  <td>sociosqu</td>
-                  <td>ad</td>
-                  <td>litora</td>
-                </tr>
-                <tr>
-                  <td>1,013</td>
-                  <td>torquent</td>
-                  <td>per</td>
-                  <td>conubia</td>
-                  <td>nostra</td>
-                </tr>
-                <tr>
-                  <td>1,014</td>
-                  <td>per</td>
-                  <td>inceptos</td>
-                  <td>himenaeos</td>
-                  <td>Curabitur</td>
-                </tr>
-                <tr>
-                  <td>1,015</td>
-                  <td>sodales</td>
-                  <td>ligula</td>
-                  <td>in</td>
-                  <td>libero</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-		  -->
         </div>
       </div>
     </div>
 	
-	
-	
-
-
-
-
 <!-- Bootstrap core JavaScript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
